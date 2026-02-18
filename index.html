@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kantoordag Check-in – VodafoneZiggo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    :root {
+      --red:     #E60000;
+      --red-d:   #C20000;
+      --dark:    #1A1A1A;
+      --grey:    #F4F4F4;
+      --border:  #E2E2E2;
+      --mid:     #767676;
+      --r:       12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--grey);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      width: 100%;
+      background: var(--red);
+      height: 56px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; }
+    .vz-logo {
+      width: 36px; height: 36px;
+      background: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: var(--red); font-size: 0.8rem;
+    }
+    .topbar-name { color: white; font-weight: 800; font-size: 1rem; }
+    .topbar-right { text-align: right; }
+    .topbar-date { color: rgba(255,255,255,0.9); font-size: 0.78rem; font-weight: 700; }
+    .live-dot {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.68rem; font-weight: 700; color: rgba(255,255,255,0.85);
+      margin-top: 2px; justify-content: flex-end;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #69F0AE; }
+
+    /* HERO */
+    .hero {
+      width: 100%;
+      background: var(--red);
+      padding: 20px 20px 44px;
+      text-align: center; color: white;
+    }
+    .hero h1 { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px; line-height: 1.2; }
+    .hero p  { margin-top: 6px; font-size: 0.9rem; font-weight: 600; opacity: 0.88; }
+
+    /* MAIN */
+    .main { width: 100%; max-width: 520px; padding: 0 14px 48px; margin-top: -24px; }
+
+    /* CARD */
+    .card {
+      background: white; border-radius: var(--r);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+      padding: 20px 18px; margin-bottom: 14px;
+    }
+    .section-label {
+      font-size: 0.72rem; font-weight: 900; color: var(--red);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px;
+    }
+
+    /* INPUT */
+    .field-label { font-size: 0.82rem; font-weight: 800; color: var(--dark); margin-bottom: 6px; display: block; }
+    input[type="text"] {
+      width: 100%; padding: 12px 14px;
+      border: 2px solid var(--border); border-radius: 8px;
+      font-size: 1rem; font-family: inherit; font-weight: 600; color: var(--dark);
+      transition: border-color 0.2s; margin-bottom: 16px; background: white;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--red); }
+    input[type="text"]::placeholder { color: #bbb; font-weight: 400; }
+
+    /* CHIPS */
+    .chips-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 18px; }
+    .date-chip {
+      border: 2px solid var(--border); border-radius: 8px;
+      padding: 11px 10px; text-align: center; cursor: pointer;
+      transition: all 0.18s; user-select: none; background: white;
+    }
+    .date-chip:hover { border-color: var(--red); }
+    .date-chip.selected { border-color: var(--red); background: var(--red); }
+    .chip-day { font-weight: 800; font-size: 0.9rem; color: var(--dark); }
+    .chip-full { font-size: 0.72rem; font-weight: 600; color: var(--mid); margin-top: 2px; }
+    .date-chip.selected .chip-day,
+    .date-chip.selected .chip-full { color: white; }
+
+    /* BUTTON */
+    .btn-in {
+      width: 100%; padding: 14px; background: var(--red); color: white;
+      border: none; border-radius: 8px; font-size: 1rem; font-weight: 900;
+      font-family: inherit; cursor: pointer; letter-spacing: 0.02em;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-in:hover  { background: var(--red-d); }
+    .btn-in:active { transform: scale(0.98); }
+    .btn-in:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* TABS */
+    .tabs-row {
+      display: flex; gap: 6px; overflow-x: auto;
+      padding-bottom: 2px; margin-bottom: 14px; scrollbar-width: none;
+    }
+    .tabs-row::-webkit-scrollbar { display: none; }
+    .week-tab {
+      flex-shrink: 0; padding: 6px 13px; border-radius: 20px;
+      border: 2px solid var(--border); font-size: 0.8rem; font-weight: 800;
+      cursor: pointer; color: var(--mid); background: white;
+      font-family: inherit; transition: all 0.18s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .week-tab:hover { border-color: var(--red); color: var(--red); }
+    .week-tab.active { background: var(--red); border-color: var(--red); color: white; }
+    .tab-pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      font-size: 0.7rem; font-weight: 900; background: var(--red); color: white;
+    }
+    .week-tab.active .tab-pill { background: rgba(255,255,255,0.35); }
+
+    /* LIST HEADER */
+    .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .total-badge { font-size: 0.78rem; font-weight: 700; color: var(--mid); background: var(--grey); padding: 4px 10px; border-radius: 20px; }
+
+    /* ATTENDEES */
+    .attendee-list { display: flex; flex-direction: column; gap: 8px; }
+    .attendee-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; background: var(--grey); border-radius: 10px;
+      animation: popIn 0.2s ease;
+    }
+    @keyframes popIn {
+      from { opacity:0; transform: translateY(5px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--red); color: white; font-weight: 900;
+      font-size: 1.05rem; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .att-info { flex: 1; min-width: 0; }
+    .att-name { font-weight: 800; color: var(--dark); font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .att-time { font-size: 0.73rem; color: var(--mid); font-weight: 600; margin-top: 1px; }
+    .badge-yes { flex-shrink: 0; background: #E8F5E9; color: #2E7D32; font-size: 0.7rem; font-weight: 900; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .del-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.95rem; padding: 4px; transition: color 0.18s; flex-shrink: 0; }
+    .del-btn:hover { color: var(--red); }
+
+    /* EMPTY */
+    .empty-state { text-align: center; padding: 32px 0; color: var(--mid); }
+    .empty-icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.88rem; font-weight: 700; line-height: 1.6; }
+
+    /* LOADING */
+    .loading-state { text-align: center; padding: 24px 0; }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--red); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: var(--dark); color: white;
+      padding: 12px 22px; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 700; font-family: inherit;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* FOOTER */
+    .footer {
+      width: 100%; background: var(--dark); color: rgba(255,255,255,0.4);
+      text-align: center; padding: 14px; font-size: 0.75rem; font-weight: 700; margin-top: auto;
+    }
+
+    @media (max-width: 400px) {
+      .hero h1 { font-size: 1.3rem; }
+      .topbar-name { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="vz-logo">VZ</div>
+    <span class="topbar-name">Kantoordag Check-in</span>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-date" id="todayDate"></div>
+    <div class="live-dot"><span class="dot"></span> Live gedeeld</div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Woensdag op kantoor? 🏢</h1>
+  <p>Check in en zie wie er ook is!</p>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- FORMULIER -->
+  <div class="card">
+    <div class="section-label">Jouw aanmelding</div>
+    <label class="field-label" for="nameInput">Jouw naam</label>
+    <input type="text" id="nameInput" placeholder="Bijv. Sarah Jansen" autocomplete="given-name" />
+    <span class="field-label">Kies een woensdag</span>
+    <div class="chips-grid" id="dateChips"></div>
+    <button class="btn-in" id="checkinBtn" onclick="checkIn()">Inchecken →</button>
+  </div>
+
+  <!-- AANWEZIGEN -->
+  <div class="card">
+    <div class="list-header">
+      <div class="section-label" style="margin-bottom:0">Wie is er?</div>
+      <div class="total-badge">Totaal: <span id="totalCount">0</span></div>
+    </div>
+    <div class="tabs-row" id="weekTabs"></div>
+    <div class="attendee-list" id="attendeeList">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div style="font-size:0.85rem;font-weight:700;color:#aaa">Laden…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">© VodafoneZiggo — Interne kantoordag tool</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── State ──
+  let allData  = {};
+  let activeTab = 0;
+  let selectedIdx = 0;
+  let isLoading = false;
+
+  // ── Storage key ──
+  const STORAGE_KEY = 'vz-kantoordag-v1';
+
+  // ── Helpers ──
+  function getNextWednesdays(n = 4) {
+    const res = [], d = new Date();
+    d.setHours(0,0,0,0);
+    while (d.getDay() !== 3) d.setDate(d.getDate() + 1);
+    for (let i = 0; i < n; i++) { res.push(new Date(d)); d.setDate(d.getDate() + 7); }
+    return res;
+  }
+  function dateKey(d) { return d.toISOString().split('T')[0]; }
+
+  const wednesdays = getNextWednesdays(4);
+
+  document.getElementById('todayDate').textContent =
+    new Date().toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
+
+  // ── Load & Save via window.storage (gedeeld) ──
+  async function loadData() {
+    try {
+      const result = await window.storage.get(STORAGE_KEY, true); // shared=true
+      return result ? JSON.parse(result.value) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function saveData(data) {
+    try {
+      await window.storage.set(STORAGE_KEY, JSON.stringify(data), true); // shared=true
+    } catch(e) {
+      console.error('Opslaan mislukt:', e);
+    }
+  }
+
+  // ── Init ──
+  async function init() {
+    initChips();
+    allData = await loadData();
+    renderAll();
+    // Elke 10 seconden verversen
+    setInterval(async () => {
+      allData = await loadData();
+      renderAll();
+    }, 10000);
+  }
+
+  // ── Chips ──
+  function initChips() {
+    const c = document.getElementById('dateChips');
+    c.innerHTML = '';
+    wednesdays.forEach((w, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'date-chip' + (i === 0 ? ' selected' : '');
+      chip.dataset.key = dateKey(w);
+      chip.innerHTML = `
+        <div class="chip-day">Wo ${w.getDate()} ${w.toLocaleDateString('nl-NL',{month:'short'})}</div>
+        <div class="chip-full">${w.toLocaleDateString('nl-NL',{month:'long', year:'numeric'})}</div>
+      `;
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.date-chip').forEach(x => x.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedIdx = i;
+      });
+      c.appendChild(chip);
+    });
+  }
+
+  // ── Check-in ──
+  window.checkIn = async function() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) { showToast('⚠️ Vul je naam in!'); return; }
+
+    const chip = document.querySelector('.date-chip.selected');
+    if (!chip)  { showToast('⚠️ Kies een woensdag!'); return; }
+    const key = chip.dataset.key;
+
+    // Herlaad eerst voor verse data
+    allData = await loadData();
+    const existing = allData[key] ? Object.values(allData[key]) : [];
+    if (existing.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+      showToast('Je staat al ingecheckt voor deze dag!'); return;
+    }
+
+    const btn = document.getElementById('checkinBtn');
+    btn.disabled = true;
+    btn.textContent = 'Opslaan…';
+
+    if (!allData[key]) allData[key] = {};
+    const id = 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    const now = new Date();
+    allData[key][id] = {
+      name,
+      time: now.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' }),
+      ts: Date.now()
+    };
+
+    await saveData(allData);
+
+    document.getElementById('nameInput').value = '';
+    btn.disabled = false;
+    btn.textContent = 'Inchecken →';
+
+    // Switch tab naar geselecteerde datum
+    activeTab = wednesdays.findIndex(w => dateKey(w) === key);
+    renderAll();
+    showToast(`✅ ${name} ingecheckt!`);
+  };
+
+  // ── Verwijderen ──
+  window.removeEntry = async function(key, id) {
+    allData = await loadData();
+    if (allData[key] && allData[key][id]) {
+      delete allData[key][id];
+      if (Object.keys(allData[key]).length === 0) delete allData[key];
+      await saveData(allData);
+      renderAll();
+    }
+  };
+
+  // ── Render ──
+  function renderAll() {
+    renderTabs();
+    renderList();
+    const total = Object.values(allData).reduce((s, v) => s + (v ? Object.keys(v).length : 0), 0);
+    document.getElementById('totalCount').textContent = total;
+  }
+
+  function renderTabs() {
+    const c = document.getElementById('weekTabs');
+    c.innerHTML = '';
+    wednesdays.forEach((w, i) => {
+      const key   = dateKey(w);
+      const count = allData[key] ? Object.keys(allData[key]).length : 0;
+      const btn   = document.createElement('button');
+      btn.className = 'week-tab' + (i === activeTab ? ' active' : '');
+      btn.innerHTML = `${w.getDate()} ${w.toLocaleDateString('nl-NL',{month:'short'})}${count > 0 ? ` <span class="tab-pill">${count}</span>` : ''}`;
+      btn.addEventListener('click', () => { activeTab = i; renderAll(); });
+      c.appendChild(btn);
+    });
+  }
+
+  function renderList() {
+    const key     = dateKey(wednesdays[activeTab]);
+    const entries = allData[key] ? Object.entries(allData[key]) : [];
+    const list    = document.getElementById('attendeeList');
+
+    if (entries.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">👋</div>
+          <p>Nog niemand ingecheckt<br>voor deze woensdag</p>
+        </div>`;
+      return;
+    }
+
+    entries.sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
+    list.innerHTML = '';
+    entries.forEach(([id, entry]) => {
+      const item = document.createElement('div');
+      item.className = 'attendee-item';
+      item.innerHTML = `
+        <div class="avatar">${entry.name.charAt(0).toUpperCase()}</div>
+        <div class="att-info">
+          <div class="att-name">${entry.name}</div>
+          <div class="att-time">Ingecheckt om ${entry.time}</div>
+        </div>
+        <span class="badge-yes">✓ Aanwezig</span>
+        <button class="del-btn" onclick="removeEntry('${key}','${id}')" title="Verwijderen">✕</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  // ── Toast ──
+  window.showToast = function(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  };
+
+  init();
+</script>
+</body>
+</html>
