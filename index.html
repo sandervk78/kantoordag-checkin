@@ -57,7 +57,8 @@
       font-size: 0.68rem; font-weight: 700; color: rgba(255,255,255,0.85);
       margin-top: 2px; justify-content: flex-end;
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #69F0AE; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #69F0AE; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
     /* HERO */
     .hero {
@@ -169,15 +170,12 @@
     .del-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.95rem; padding: 4px; transition: color 0.18s; flex-shrink: 0; }
     .del-btn:hover { color: var(--red); }
 
-    /* EMPTY */
+    /* EMPTY / LOADING */
     .empty-state { text-align: center; padding: 32px 0; color: var(--mid); }
     .empty-icon { font-size: 2.4rem; margin-bottom: 10px; }
     .empty-state p { font-size: 0.88rem; font-weight: 700; line-height: 1.6; }
-
-    /* LOADING */
-    .loading-state { text-align: center; padding: 24px 0; }
     .spinner {
-      width: 32px; height: 32px; border: 3px solid var(--border);
+      width: 30px; height: 30px; border: 3px solid var(--border);
       border-top-color: var(--red); border-radius: 50%;
       animation: spin 0.8s linear infinite; margin: 0 auto 10px;
     }
@@ -249,9 +247,9 @@
     </div>
     <div class="tabs-row" id="weekTabs"></div>
     <div class="attendee-list" id="attendeeList">
-      <div class="loading-state">
+      <div class="empty-state">
         <div class="spinner"></div>
-        <div style="font-size:0.85rem;font-weight:700;color:#aaa">Laden…</div>
+        <p>Laden…</p>
       </div>
     </div>
   </div>
@@ -262,14 +260,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── Google Sheets Web App URL ──
+  const API = 'https://script.google.com/macros/s/AKfycbwwXV7zgIuETZMd0NvzJqkV8OYZatvHC2nit1wKK972XkKuH31s9I20l_xCGpwbKYoV/exec';
+
   // ── State ──
-  let allData  = {};
+  let allData   = {};
   let activeTab = 0;
   let selectedIdx = 0;
-  let isLoading = false;
-
-  // ── Storage key ──
-  const STORAGE_KEY = 'vz-kantoordag-v1';
 
   // ── Helpers ──
   function getNextWednesdays(n = 4) {
@@ -286,34 +283,35 @@
   document.getElementById('todayDate').textContent =
     new Date().toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
 
-  // ── Load & Save via window.storage (gedeeld) ──
-  async function loadData() {
+  // ── API calls ──
+  async function apiRead() {
     try {
-      const result = await window.storage.get(STORAGE_KEY, true); // shared=true
-      return result ? JSON.parse(result.value) : {};
-    } catch {
-      return {};
-    }
+      const res = await fetch(API + '?action=read');
+      return await res.json();
+    } catch { return {}; }
   }
 
-  async function saveData(data) {
-    try {
-      await window.storage.set(STORAGE_KEY, JSON.stringify(data), true); // shared=true
-    } catch(e) {
-      console.error('Opslaan mislukt:', e);
-    }
+  async function apiWrite(key, id, name, time, ts) {
+    const url = `${API}?action=write&key=${encodeURIComponent(key)}&id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}&time=${encodeURIComponent(time)}&ts=${ts}`;
+    await fetch(url);
+  }
+
+  async function apiDelete(key, id) {
+    const url = `${API}?action=delete&key=${encodeURIComponent(key)}&id=${encodeURIComponent(id)}`;
+    await fetch(url);
   }
 
   // ── Init ──
   async function init() {
     initChips();
-    allData = await loadData();
+    await refreshData();
+    // Elke 15 seconden verversen
+    setInterval(refreshData, 15000);
+  }
+
+  async function refreshData() {
+    allData = await apiRead();
     renderAll();
-    // Elke 10 seconden verversen
-    setInterval(async () => {
-      allData = await loadData();
-      renderAll();
-    }, 10000);
   }
 
   // ── Chips ──
@@ -346,8 +344,7 @@
     if (!chip)  { showToast('⚠️ Kies een woensdag!'); return; }
     const key = chip.dataset.key;
 
-    // Herlaad eerst voor verse data
-    allData = await loadData();
+    // Check op dubbele naam
     const existing = allData[key] ? Object.values(allData[key]) : [];
     if (existing.some(e => e.name.toLowerCase() === name.toLowerCase())) {
       showToast('Je staat al ingecheckt voor deze dag!'); return;
@@ -357,16 +354,12 @@
     btn.disabled = true;
     btn.textContent = 'Opslaan…';
 
-    if (!allData[key]) allData[key] = {};
-    const id = 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    const id  = 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     const now = new Date();
-    allData[key][id] = {
-      name,
-      time: now.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' }),
-      ts: Date.now()
-    };
+    const time = now.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+    const ts   = Date.now();
 
-    await saveData(allData);
+    await apiWrite(key, id, name, time, ts);
 
     document.getElementById('nameInput').value = '';
     btn.disabled = false;
@@ -374,19 +367,15 @@
 
     // Switch tab naar geselecteerde datum
     activeTab = wednesdays.findIndex(w => dateKey(w) === key);
-    renderAll();
+
+    await refreshData();
     showToast(`✅ ${name} ingecheckt!`);
   };
 
   // ── Verwijderen ──
   window.removeEntry = async function(key, id) {
-    allData = await loadData();
-    if (allData[key] && allData[key][id]) {
-      delete allData[key][id];
-      if (Object.keys(allData[key]).length === 0) delete allData[key];
-      await saveData(allData);
-      renderAll();
-    }
+    await apiDelete(key, id);
+    await refreshData();
   };
 
   // ── Render ──
